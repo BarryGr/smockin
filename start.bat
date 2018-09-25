@@ -1,13 +1,10 @@
 @echo off
 
-REM   You can use more major version by removing %k and %l and %m.This command prompt version.
-REM   for /f tokens^=2-5^ delims^=.-_^" %j in ('java -fullversion 2^>^&1') do @set "jver=%j%k%l%m"
-REM   echo %jver%
+IF DEFINED %SMOCKIN_DIR_PATH% (set APP_DIR_PATH=%SMOCKIN_DIR_PATH%) ELSE (set APP_DIR_PATH=%userprofile%\.smockin)
 
 set APP_NAME=SMOCKIN
-set APP_VERSION=1.5.1-SNAPSHOT
+set APP_VERSION=1.5.0-SNAPSHOT
 
-set APP_DIR_PATH=%userprofile%\.smockin
 set DB_DIR_PATH=%APP_DIR_PATH%\db
 set DB_DRIVER_DIR_PATH=%DB_DIR_PATH%\driver
 set DB_DATA_DIR_PATH=%DB_DIR_PATH%\data
@@ -16,11 +13,12 @@ set H2_JAR_NAME=h2-1.4.194.jar
 set DB_PROPS_FILE=db.properties
 set APP_PROPS_FILE=app.properties
 
+set JRE_STAND_ALONE=jre1.8.0_144\bin\
+
 IF NOT EXIST %APP_DIR_PATH% (
   echo Please run the install.sh script first to install required .smockin config to your user home
   exit /B
 )
-
 
 
 SETLOCAL ENABLEDELAYEDEXPANSION
@@ -43,8 +41,11 @@ FOR /F "tokens=3 USEBACKQ" %%F IN (`findstr "^[^#;]" %APP_DIR_PATH%\%APP_PROPS_F
   SET var!count!=%%F
   SET /a count=!count!+1
 )
+
+
+IF DEFINED %2 (set APP_PORT=%1) ELSE (set APP_PORT=%var2%)
+
 set H2_PORT=%var1%
-set APP_PORT=%var2%
 set MULTI_USER_MODE_CONF=%var3%
 
 set MULTI_USER_MODE=false
@@ -71,7 +72,7 @@ if "%DRIVER_CLASS%"=="org.h2.Driver" (
   call set JDBC_URL=%%JDBC_URL:{H2.PORT}=%H2_PORT%%%
 
   echo #  Starting H2 TCP Database...
-  start java -cp %DB_DRIVER_DIR_PATH%\%H2_JAR_NAME% org.h2.tools.Server -tcp -web -webAllowOthers -tcpAllowOthers -tcpPort %H2_PORT%
+  start %JRE_STAND_ALONE%java -cp %DB_DRIVER_DIR_PATH%\%H2_JAR_NAME% org.h2.tools.Server -tcp -web -webAllowOthers -tcpAllowOthers -tcpPort %H2_PORT%
 
 )
 
@@ -97,7 +98,7 @@ echo #  Please Note:
 echo #  - Application logs are available from: .smockin/log (under the user.home directory)
 echo #  - Navigate to: 'http://localhost:%APP_PORT%/index.html' to access the Smockin Admin UI.
 
-mvn spring-boot:run -Drun.jvmArguments="-Dspring.profiles.active=%APP_PROFILE% -Dmulti.user.mode=%MULTI_USER_MODE% -Dserver.port=%APP_PORT% %VM_ARGS%"
+%JRE_STAND_ALONE%java -Dspring.profiles.active=%APP_PROFILE% -Dmulti.user.mode=%MULTI_USER_MODE% -Dserver.port=%APP_PORT% %VM_ARGS% -jar lib/smockin-%APP_VERSION%.jar
 
 echo #
 echo #####################################################################################
